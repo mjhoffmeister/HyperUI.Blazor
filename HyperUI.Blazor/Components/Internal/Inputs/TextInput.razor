@@ -1,0 +1,59 @@
+﻿@using Microsoft.OpenApi.Any
+@using Microsoft.OpenApi.Models
+
+@namespace HyperUI.Blazor.Internal
+
+@if (IsReadOnly || Schema.ReadOnly)
+{
+    @Value
+}
+else if (Schema.Enum.Any())
+{
+    <MudSelect 
+        @bind-Value="@Value"
+        T="object"
+		AnchorOrigin="Origin.BottomCenter"
+        Label="@Schema.Title"
+        Variant="Variant.Outlined">
+        @foreach (IOpenApiAny value in Schema.Enum)
+        {
+			object valueObject = 
+				(value as OpenApiString)?.Value ?? "Invalid enum value";
+
+			// TODO: log and don't render invalid enum values
+
+            <MudSelectItem T="object" Value="@valueObject"/>
+        }
+    </MudSelect>
+}
+else
+{
+    <MudTextField @bind-Value="@Value" />
+}
+
+@code {
+    // String property converter for nullable objects
+    private readonly Converter<object?> _stringPropertyConverter = new()
+    {
+        SetFunc = stringObject => stringObject?.ToString(),
+        GetFunc = text => (object?)text,
+    };
+
+    /// <summary>
+    /// Read-only indicator. Overrides <see cref="OpenApiSchema.ReadOnly"/>.
+    /// </summary>
+    [Parameter]
+    public bool IsReadOnly { get; set; } = true;
+
+    /// <summary>
+    /// OpenAPI schema for the value.
+    /// </summary>
+    [Parameter]
+    public OpenApiSchema Schema { get; set; }
+
+    /// <summary>
+    /// Value.
+    /// </summary>
+    [Parameter]
+    public object? Value { get; set; }
+}

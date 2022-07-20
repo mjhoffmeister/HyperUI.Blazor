@@ -1,0 +1,35 @@
+﻿@using Microsoft.OpenApi.Models
+@using MudBlazor
+@using System.Text.Json
+
+@namespace HyperUI.Blazor.Internal
+
+<MudPaper Class="pa-4">
+    @if (Item?.Any() == true && ItemSchema?.Properties?.Any() == true)
+    {
+        @foreach ((string propertyName, object? propertyValue) in Item)
+        {
+            
+        }
+    }
+    else
+    {
+        
+    }
+</MudPaper>
+
+@code {
+    /// <summary>
+    /// Item for the form to render.
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public Dictionary<string, object?>? Item { get; set; }
+
+    /// <summary>
+    /// Item schema.
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public OpenApiSchema? ItemSchema { get; set; }
+}

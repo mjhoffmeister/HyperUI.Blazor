@@ -1,0 +1,101 @@
+﻿@using Hydra.NET
+@using HyperUI.Core
+@using Microsoft.OpenApi.Any
+@using Microsoft.OpenApi.Models
+@using MudBlazor
+@using System.Text.Json
+
+@namespace HyperUI.Blazor.Internal
+
+<MudTable @ref="_table" 
+		  CanCancelEdit="true"
+		  Class="rounded-xl"
+		  Items="@Items" 
+		  Loading="@_isLoading"
+		  OnCancelEditClick="@OnCancelEditButtonClicked"
+		  OnCommitEditClick="@OnCommitEditButtonClicked"
+		  Outlined="false"
+		  RowEditCancel="RevertItemChanges"
+		  RowEditPreview="CacheItem">
+	<ToolBarContent>
+		<MudText Typo="Typo.h6">@Title</MudText>
+		@if (_canAdd)
+		{
+			<MudSpacer />
+			<MudTooltip Text="@AddItemTooltip">
+				<MudIconButton 
+					aria-label="add"
+					Icon="@Icons.Material.Filled.Add"
+					OnClick="@OnAddButtonClicked">
+				</MudIconButton>
+			</MudTooltip>
+		}
+	</ToolBarContent>
+	<HeaderContent>
+		@foreach ((_, OpenApiSchema propertySchema) in _propertySchemas)
+		{
+			<MudTh>@propertySchema.Title</MudTh>
+		}
+		@if (_hasActions)
+		{
+			<MudTh>Actions</MudTh>
+		}
+	</HeaderContent>
+	<RowTemplate>
+		<HyperUIRowTemplate OnDeleteButtonClickedCallback="OnDeleteButtonClicked"
+			                PropertySchemas="@_propertySchemas"
+							ResolveSchemaReferenceDelegate="ResolveSchemaReference"
+							TableContext="@context" />
+	</RowTemplate>
+	<RowEditingTemplate>
+		@foreach ((string propertyKey, OpenApiSchema propertySchema) in _propertySchemas)
+		{
+			<MudTd DataLabel="@propertyKey">
+				@if (propertySchema.ReadOnly
+				     || (!@context.CanEdit() && _editState != TableEditState.EditingNewItem))
+				{
+					if (propertySchema.Type == OpenApiDataType.Boolean)
+					{
+						<MudSwitch Checked="@context.GetValueOrDefault(propertyKey)"
+						           Disabled="true" />
+					}
+					else
+					{
+						@context.GetValueOrDefault(propertyKey);
+					}
+				}
+				else if (propertySchema.Type == OpenApiDataType.Boolean)
+				{
+					<MudSwitch @bind-Checked="@context[propertyKey]"
+							   Color="Color.Primary"
+					           Converter="@_boolPropertyConverter" />
+				}
+				else if (propertySchema.Enum.Any())
+				{
+					<MudSelect 
+                        @bind-Value="@context[propertyKey]"
+                        T="object"
+						AnchorOrigin="Origin.BottomCenter"
+                        Label="@propertySchema.Title"
+                        Variant="Variant.Outlined">
+                        @foreach (IOpenApiAny value in propertySchema.Enum)
+                        {
+							object valueObject = 
+								(value as OpenApiString)?.Value ?? "Invalid enum value";
+
+							// TODO: log and don't render invalid enum values
+
+                            <MudSelectItem T="object" Value="@valueObject"/>
+                        }
+                    </MudSelect>
+                }
+                else
+                {
+                    <MudTextField 
+						@bind-Value="@context[propertyKey]"
+						Converter="@_stringPropertyConverter" />
+                }
+			</MudTd>
+		}
+	</RowEditingTemplate>
+</MudTable>

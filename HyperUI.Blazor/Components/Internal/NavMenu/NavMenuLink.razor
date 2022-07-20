@@ -1,0 +1,58 @@
+﻿@using MudBlazor;
+
+@namespace HyperUI.Blazor.Internal
+
+@inject NavigationManager NavigationManager;
+
+<MudNavLink Class="rounded-xl" Href="@Path" Icon="@GetMudIconName()">@Title</MudNavLink>
+
+@code {
+    /// <summary>
+    /// The hint for which icon to use in the nav menu link. Based on MudBlazor icon names.
+    /// </summary>
+    [Parameter]
+    public string? IconHint { get; set; }
+
+    /// <summary>
+    /// The OpenAPI path the the resource.
+    /// </summary>
+    [Parameter]
+    public string? Path { get; set; }
+
+    /// <summary>
+    /// Title for the nav menu link.
+    /// </summary>
+    [Parameter]
+    public string? Title { get; set; }
+
+    /// <summary>
+    /// Gets the MUD icon name from the icon hint. Defaults to List if no mapping is set.
+    /// </summary>
+    /// <returns>MUD icon name.</returns>
+    private string GetMudIconName() => IconHint switch
+    {
+        "Add" => Icons.Filled.Add,
+        "CheckBox" => Icons.Filled.CheckBox,
+        "CheckBoxOutlineBlank" => Icons.Filled.CheckBoxOutlineBlank,
+        "DateRange" => Icons.Filled.DateRange,
+        "Delete" => Icons.Filled.Delete,
+        "Edit" => Icons.Filled.Edit,
+        "Event" => Icons.Filled.Event,
+        "Notifications" => Icons.Filled.Notifications,
+        "People" => Icons.Filled.People,
+        "PostAdd" => Icons.Filled.PostAdd,
+        "ShowChart" => Icons.Filled.ShowChart,
+        "SwapHorizontalCircle" => Icons.Filled.SwapHorizontalCircle,
+        "QueueMusic" => Icons.Filled.QueueMusic,
+        _ => Icons.Filled.List
+    };
+
+    /// <summary>
+    /// Click event handler.
+    /// </summary>
+    private void OnNavLinkClick()
+    {
+        if (Path != null)
+            NavigationManager.NavigateTo(Path);
+    }
+}

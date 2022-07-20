@@ -1,0 +1,244 @@
+﻿@using Hydra.NET;
+@using HyperUI.Blazor.Internal;
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Configuration
+@using Microsoft.OpenApi.Models
+@using Microsoft.OpenApi.Readers
+@using MudBlazor;
+@using System.IO
+@using System.Net;
+@using System.Text.Json;
+
+@inject IConfiguration Configuration
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager;
+@inject ISnackbar Snackbar
+
+@attribute [Authorize]
+
+@page "/{pathName}"
+
+<MudContainer Class="mt-16" MaxWidth="MaxWidth.Large">
+	@if (_pageType == PageType.Unspecified)
+	{
+		if (_errorMessage != null)
+		{
+			<MudText Typo="Typo.body1">@_errorMessage</MudText>
+		}
+		else
+		{
+			<MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="56px" />
+			<MudSkeleton Height="48.5px" />
+			<MudSkeleton Height="48.5px" />
+			<MudSkeleton Height="48.5px" />
+			<MudSkeleton Height="48.5px" />
+			<MudSkeleton Height="48.5px" />
+			<MudSkeleton Height="48.5px" />
+		}
+	}
+	else if (_pageType == PageType.Table)
+	{
+		<Table 
+			Items="@_pageData"
+			OnAddCallback="@OnAdd"
+			OnAddStartedCallback="@OnAddStarted"
+			OnDeleteCallback="@OnDelete"
+			ReferencedSchemas="@_tableItemReferencedSchemas"
+			Schema="@_tableItemSchema" 
+			Title="@_title"
+		/>
+	}
+</MudContainer>
+
+@code {
+	public enum PageType
+	{
+		Table,
+		Unspecified
+	}
+
+	private string? _errorMessage;
+
+	private List<Dictionary<string, object?>>? _pageData;
+
+	private PageType _pageType = PageType.Unspecified;
+
+	private OpenApiDocument? _openApiDocument;
+
+	private Dictionary<string, OpenApiSchema>? _tableItemReferencedSchemas;
+
+	private OpenApiSchema? _tableItemSchema;
+
+	private string? _title;
+
+	[Parameter]
+	public string? PathName { get; set; }
+
+	protected override async Task OnInitializedAsync()
+	{
+		string? openApiDocumentationUrl = Configuration["OpenApi:DocumentationUrl"];
+
+		if (openApiDocumentationUrl != null)
+		{
+			try
+			{
+				// Reload API documentation as the authenticated user
+				var httpClient = HttpClientFactory.CreateClient("WebApi");
+
+				// Get the API documentation
+				Stream openApiDocumentationStream = await httpClient.GetStreamAsync(
+					openApiDocumentationUrl);
+
+				// Convert the API documentation stream to an OpenApiDocument object
+				_openApiDocument = new OpenApiStreamReader().Read(
+					openApiDocumentationStream, out var diagnostic);
+			}
+			catch (HttpRequestException)
+			{
+				_errorMessage = "Something went wrong behind the scenes.";
+			}
+			catch (InvalidOperationException)
+			{
+				_errorMessage = "Something isn't configured correctly.";
+			}
+			catch (TaskCanceledException)
+			{
+				_errorMessage = "Something is taking too long.";
+			}
+		}
+
+		Snackbar.Configuration.PositionClass = Defaults.Classes.Position.BottomCenter;
+	}
+
+	protected override async Task OnParametersSetAsync()
+	{
+		if (_openApiDocument != null && !string.IsNullOrEmpty(PathName))
+		{
+			// Look up the path
+			string pathUrl = $"/{PathName}";
+			if (_openApiDocument.Paths.TryGetValue(pathUrl, out OpenApiPathItem? path))
+			{
+				// Get the page's data
+				List<Dictionary<string, object?>>? pageData = await GetPageData(pathUrl);
+
+				// Set the page type
+				if (path.DoesGetOperationReturnArray(out string? itemSchemaReferenceId))
+				{
+					if (_openApiDocument.Components.Schemas.TryGetValue(
+						itemSchemaReferenceId, out OpenApiSchema? itemSchema))
+					{
+						_pageType = PageType.Table;
+						_tableItemReferencedSchemas = _openApiDocument
+							.TryGetReferencedSchemas(itemSchemaReferenceId);
+						_tableItemSchema = itemSchema;
+						_title = path.Summary;
+					}
+				}
+
+				_pageData = pageData;
+
+				await InvokeAsync(() => StateHasChanged());
+			}
+		}
+	}
+
+	/// <summary>
+	/// Gets data for the page.
+	/// </summary>
+	/// <param name="pathUrl">The Open API path URL for the page.</param>
+	/// <returns>Data for the page.</returns>
+	private async Task<List<Dictionary<string, object?>>?> GetPageData(string pathUrl)
+	{
+		HttpClient httpClient = HttpClientFactory.CreateClient("WebApi");
+
+		// Get data from the page's API path
+		var jsonData = await httpClient
+			.GetFromJsonAsync<IEnumerable<Dictionary<string, JsonElement>>>(pathUrl);
+
+		if (jsonData == null)
+			return null;
+
+		return jsonData.ConvertJson();
+	}
+
+	private async Task OnAdd(Dictionary<string, object?> newItem)
+	{
+		HttpClient httpClient = HttpClientFactory.CreateClient("WebApi");
+
+		// Post the new item
+		HttpResponseMessage? addResponse = await httpClient.PostAsync(
+			PathName, JsonContent.Create(newItem));
+
+		// Handle the 201 Created response
+		if (addResponse?.StatusCode == HttpStatusCode.Created)
+		{
+			// Try to get an AddItemResponse from the response
+			string jsonResponse = await addResponse.Content.ReadAsStringAsync();
+			AddItemResponse? addItemResponse = JsonSerializer.Deserialize<AddItemResponse>(
+				jsonResponse);
+
+			// Add the item if the response includes the item's id
+			if (addItemResponse?.Id != null && _pageData != null)
+			{
+				newItem.Add("@id", addItemResponse.Id);
+
+				if (addItemResponse.Operations?.Any() == true)
+					newItem.Add("operation", addItemResponse.Operations);
+			}
+
+			// TODO: try calling GET on the page path again to refresh if an id wasn't returned?
+		}
+
+		// TODO: handle failures
+	}
+
+	private void OnAddStarted(Dictionary<string, object?> newEmptyItem)
+	{
+		_pageData?.Insert(0, newEmptyItem);
+	}
+
+	/// <summary>
+	/// Callback for delete operations.
+	/// </summary>
+	/// <param name="id">Id of the resource to delete.</param>
+	private async Task OnDelete(string id)
+	{
+		if (_pageData?.Any() == true)
+		{
+			// Create an API client
+			HttpClient httpClient = HttpClientFactory.CreateClient("WebApi");
+
+			// Delete the item
+			HttpResponseMessage? deleteResponse = await httpClient.DeleteAsync(id);
+
+			string message;
+
+			// For OK responses, remove the item and try to parse the response content for a message
+			if (deleteResponse.StatusCode == HttpStatusCode.OK)
+			{
+				RemoveItem(id);
+				message = await deleteResponse.TryGetStatusDescriptionAsync() ?? "Item removed.";
+			}
+			// For No Content responses, remove the item and set a generic message
+			else if (deleteResponse.StatusCode == HttpStatusCode.NoContent)
+			{
+				RemoveItem(id);
+				message = "Item removed";
+			}
+			// For failure responses, try to parse the response content for a message
+			else
+			{
+				message = await deleteResponse
+					.TryGetStatusDescriptionAsync() ?? "Failed to remove item";
+			}
+
+			// Show the message in a snackbar
+			Snackbar.Add(message, Severity.Normal);
+		}
+
+		void RemoveItem(string id)
+		{
+			_ = _pageData?.RemoveAll(i => (string?)i.GetValueOrDefault("@id") == id);
+		};
+	}
+}

@@ -1,0 +1,38 @@
+﻿@using MudBlazor;
+
+@namespace HyperUI.Blazor.Internal
+
+<MudTooltip Text="@TooltipText">
+    <MudToggleIconButton
+        Color="Color.Inherit"
+        Icon="@Icons.Material.Filled.Brightness4"
+        Toggled="@IsDarkMode"
+        ToggledChanged="ToggleIsDarkMode"
+        ToggledColor="@Color.Inherit"
+        ToggledIcon="@Icons.Material.Filled.Brightness5"
+        Variant="Variant.Text"
+    />
+</MudTooltip>
+
+@code {
+    // Tooltip text
+    private string TooltipText => IsDarkMode ? "Switch to light theme" : "Switch to dark theme";
+
+    /// <summary>
+    /// Dark mode toggle.
+    /// </summary>
+    [Parameter]
+    public bool IsDarkMode { get; set; }
+
+    /// <summary>
+    /// Dark mode toggle change handler.
+    /// </summary>
+    [Parameter]
+    public EventCallback<bool> IsDarkModeChanged { get; set; }
+
+    /// <summary>
+    /// Dark mode toggle event dispatcher.
+    /// </summary>
+    /// <returns>The result of the async operation.</returns>
+    private async Task ToggleIsDarkMode() => await IsDarkModeChanged.InvokeAsync(!IsDarkMode);
+}

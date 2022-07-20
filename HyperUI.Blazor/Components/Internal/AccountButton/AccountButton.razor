@@ -1,0 +1,41 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using MudBlazor
+
+@namespace HyperUI.Blazor.Internal
+
+@inject NavigationManager Navigation
+@inject SignOutSessionStateManager SignOutManager
+
+<AuthorizeView>
+    <Authorized>
+        <MudTooltip Text="Log out">
+            <MudButton Class="hover-override rounded-xl"
+                       Color="Color.Inherit"
+                       OnClick="BeginLogout"
+                       Size="Size.Large"
+                       StartIcon="@Icons.Filled.Person"
+                       Style="text-transform:none">
+                @context.User.Identity?.Name
+            </MudButton>
+        </MudTooltip>
+    </Authorized>
+    <NotAuthorized>
+        <MudButton Class="hover-override rounded-xl"
+                   Color="Color.Inherit"
+                   Href="authentication/login"
+                   Size="Size.Large"
+                   StartIcon="@Icons.Filled.Person"
+                   Style="text-transform:none">
+            Log in
+        </MudButton>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code{
+    private async Task BeginLogout()
+    {
+        await SignOutManager.SetSignOutState();
+        Navigation.NavigateTo("authentication/logout");
+    }
+}

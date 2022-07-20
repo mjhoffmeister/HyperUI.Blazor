@@ -1,0 +1,208 @@
+﻿@using FluentResults;
+@using HyperUI.Blazor.Internal;
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Configuration
+@using Microsoft.OpenApi.Models
+@using Microsoft.OpenApi.Readers
+@using MudBlazor
+@using System.IO
+@using System.Linq
+@using System.Security.Claims
+@using System.Text;
+@using System.Text.RegularExpressions
+
+@namespace HyperUI.Blazor
+
+@inherits LayoutComponentBase
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IConfiguration Configuration
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+
+<MudSnackbarProvider/>
+<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" @ref="@_mudThemeProvider" Theme="_theme" />
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudIconButton Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       Icon="@Icons.Material.Filled.Menu"
+                       OnClick="@((e) => ToggleNavMenuDrawer())"/>
+        <MudText Typo="Typo.h5" Class="ml-3">Application</MudText>
+        <MudSpacer />
+        <ThemeToggle @bind-IsDarkMode="@_isDarkMode" />
+        <AccountButton />
+    </MudAppBar>
+    @if (_hasNavMenuLinkPaths)
+    {
+        <MudDrawer @bind-Open="_isNavMenuDrawerOpen"
+                   ClipMode="DrawerClipMode.Always"
+                   Elevation="2">
+            <NavMenu NavMenuLinkPaths="_navMenuLinkPaths"/>
+        </MudDrawer>
+        <MudMainContent>
+            @Body
+        </MudMainContent>
+    }
+    else if (_noOpenApiDocumentationMessage == null)
+    {
+        <MudMainContent>
+            <MudContainer Class="d-flex justify-center align-center mt-16">
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+            </MudContainer>
+        </MudMainContent>
+    }
+    else
+    {
+        <MudMainContent>
+            <MudContainer Class="d-flex justify-center align-center mt-16">
+                <MudText Typo="Typo.body1" Align="Align.Center">
+                    @_noOpenApiDocumentationMessage
+                </MudText>
+            </MudContainer>
+        </MudMainContent>
+    }
+</MudLayout>
+
+@code {
+    private bool _hasNavMenuLinkPaths = false;
+
+    private bool _isNavMenuDrawerOpen = true;
+
+    private MudThemeProvider? _mudThemeProvider;
+
+    private string? _noOpenApiDocumentationMessage = null;
+
+    private OpenApiDocument? _openApiDocument = null;
+
+    private Dictionary<string, OpenApiPathItem>? _navMenuLinkPaths = null;
+
+    private bool _isDarkMode = false;
+
+    private MudTheme _theme = new()
+        {
+            Palette = new()
+            {
+                ActionDefault = "#191c1e",
+                AppbarBackground = "#fbfcfe",
+                AppbarText = "#191c1e",
+                Background = "#fbfcfe",
+                DrawerBackground = "#fbfcfe",
+                DrawerText = "#191c1e",
+                LinesDefault = "#70787d",
+                Primary = "#006783",
+                PrimaryDarken="#ecf3f7",
+                Secondary = "#4c616b",
+                Surface = "#ecf3f7",
+                TextPrimary = "#191c1e",
+                TextSecondary = "#191c1e",
+            },
+            PaletteDark = new()
+            {
+                ActionDefault = "#e1e3e5",
+                AppbarBackground = "#191c1e",
+                Background = "#191c1e",
+                Black = "#5fd4fe",
+                DrawerBackground = "#191c1e",
+                DrawerIcon = "#e1e3e5",
+                DrawerText = "#e1e3e5",
+                HoverOpacity = 0.08,
+                LinesDefault = "#8a9296",
+                Primary = "#5fd4fe",
+                PrimaryContrastText = "#e1e3e5",
+                Secondary = "#b3cad5",
+                Surface="#2c2d30",
+                TextDisabled = "#ffffff80",
+                TextPrimary = "#e1e3e5",
+                TextSecondary = "#e1e3e5",
+            },
+            Shadows = new()
+            {
+                Elevation = Enumerable.Repeat("none", 26).ToArray(),
+            },
+            Typography = new()
+            {
+                Body1 = new()
+                {
+                    FontSize = ".875rem",
+                }
+            }
+        };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _mudThemeProvider != null)
+        {
+            _isDarkMode = await _mudThemeProvider.GetSystemPreference();
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        string? openApiDocumentationUrl = Configuration["OpenApi:DocumentationUrl"];
+
+        if (openApiDocumentationUrl != null)
+        {
+            try
+            {
+                var httpClient = HttpClientFactory.CreateClient("Anonymous");
+
+                // Get the API documentation
+                Stream openApiDocumentationStream = await httpClient.GetStreamAsync(
+                    openApiDocumentationUrl);
+
+                // Convert the API documentation stream to an OpenApiDocument object
+                _openApiDocument = new OpenApiStreamReader().Read(
+                    openApiDocumentationStream, out var diagnostic);
+
+                // Search for nav menu links
+                Dictionary<string, OpenApiPathItem>? navMenuLinkPaths = _openApiDocument?.Paths?
+                    .Where(path => path.Value.IsNavMenuLink())?
+                    .ToDictionary(path => path.Key, path => path.Value);
+
+                // Set the nav menu link paths
+                if (navMenuLinkPaths?.Any() == true)
+                {
+                    _hasNavMenuLinkPaths = true;
+                    _navMenuLinkPaths = navMenuLinkPaths;
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _noOpenApiDocumentationMessage = GetNoOpenApiDocumentationMessage(
+                    "Something went wrong behind the scenes.", ex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _noOpenApiDocumentationMessage = GetNoOpenApiDocumentationMessage(
+                    "Something isn't configured correctly.", ex);
+            }
+            catch (TaskCanceledException ex)
+            {
+                _noOpenApiDocumentationMessage = GetNoOpenApiDocumentationMessage(
+                    "Something is taking too long.", ex);
+            }
+        } 
+    }
+
+    /// <summary>
+    /// Gets a message that provides some detail when API documentation can't be retrieved.
+    /// </summary>
+    /// <param name="message">Message.</param>
+    /// <param name="ex">Exception.</param>
+    /// <returns>The message.</returns>
+    private string GetNoOpenApiDocumentationMessage(string message, Exception ex)
+    {
+        StringBuilder messageBuilder = new(message);
+        messageBuilder.Append($" Sharing the following message with a support person might help.");
+        messageBuilder.AppendLine(ex.Message);
+        return messageBuilder.ToString();
+    }
+
+    /// <summary>
+    /// Toggles
+    /// </summary>
+    private void ToggleNavMenuDrawer() => _isNavMenuDrawerOpen = !_isNavMenuDrawerOpen;
+}

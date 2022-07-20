@@ -1,0 +1,29 @@
+﻿@using Microsoft.OpenApi.Models
+@using MudBlazor
+
+@namespace HyperUI.Blazor.Internal
+
+<MudNavMenu Class="pa-2" Color="Color.Primary">
+    @if (NavMenuLinkPaths?.Any() == true)
+    {
+        @foreach (KeyValuePair<string, OpenApiPathItem> path in NavMenuLinkPaths)
+        {
+            OpenApiPathItem pathItem = path.Value;
+
+            <NavMenuLink
+                IconHint="@pathItem.TryGetIconHint()"
+                Path="@path.Key" 
+                Title="@pathItem.Summary"
+            />
+        }
+    }
+</MudNavMenu>
+
+@code {
+    /// <summary>
+    /// OpenAPI paths to render as nav menu links.
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public Dictionary<string, OpenApiPathItem>? NavMenuLinkPaths { get; set; }
+}
