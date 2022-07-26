@@ -1,0 +1,22 @@
+﻿@namespace HyperUI.Blazor.Internal
+
+@_value
+
+@code {
+    // String value
+    private string _value = "#####";
+
+    /// <summary>
+    /// Value.
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public object? Value { get; set; }
+
+    /// <inheritdoc/>
+    protected override void OnInitialized()
+    {
+        if (Value is string value)
+            _value = value;
+    }
+}

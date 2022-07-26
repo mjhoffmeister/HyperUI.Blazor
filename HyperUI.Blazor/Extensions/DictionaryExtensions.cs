@@ -126,4 +126,17 @@ internal static class DictionaryExtensions
     /// </returns>
     public static bool HasActions(this Dictionary<string, object?> dictionary) =>
         dictionary.DoOperationsExist(o => o.Method is Method.Delete or Method.Post);
+
+    /// <summary>
+    /// Tries to set a value in the dictionary.
+    /// </summary>
+    /// <param name="dictionary">Dictionary.</param>
+    /// <param name="key">Key.</param>
+    /// <param name="value">Value.</param>
+    public static void TrySet(
+        this Dictionary<string, object?> dictionary, string key, object? value)
+    {
+        if (dictionary.ContainsKey(key))
+            dictionary[key] = value;
+    }
 }

@@ -20,7 +20,7 @@ public class User
     /// JSON-LD context.
     /// </summary>
     [JsonPropertyName("@context")]
-    public static Context Context => new(new Uri("http://www.w3.org/ns/hydra/context.jsonld"));
+    public static Context Context => new(new Uri("http://www.w3.org/ns/hydra/context.jsonld"));     
 
     /// <summary>
     /// Email address.
@@ -47,17 +47,23 @@ public class User
     public bool? IsActive { get; set; }
 
     /// <summary>
+    /// Security admin indicator.
+    /// </summary>
+    [JsonPropertyName("isSecurityAdmin")]
+    public bool? IsSecurityAdmin { get; set; }
+
+    /// <summary>
+    /// User admin indicator.
+    /// </summary>
+    [JsonPropertyName("isUserAdmin")]
+    public bool? IsUserAdmin { get; set; }
+
+    /// <summary>
     /// Hydra operations.
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     [JsonPropertyName("operation")]
     public IEnumerable<Operation>? Operations { get; set; }
-
-    /// <summary>
-    /// Roles
-    /// </summary>
-    [JsonPropertyName("roles")]
-    public Roles? Roles { get; set; }
 
     /// <summary>
     /// Type.
@@ -69,8 +75,16 @@ public class User
     /// Gets the OpenAPI schema for the user class.
     /// </summary>
     /// <returns><see cref="OpenApiSchema"/>.</returns>
-    public static OpenApiSchema GetOpenApiSchema() => new()
+    public static OpenApiSchema GetOpenApiSchema() => new()                                                                 
     {
+        Extensions = new Dictionary<string, IOpenApiExtension>()
+        {
+            [PropertyGroups.OpenApiExtensionName] = new OpenApiObject
+            {
+                ["Roles"] = PropertyGroup.CreateOpenApiSpecification(
+                    "isSecurityAdmin", "isUserAdmin")
+            }
+        },
         Title = "User",
         Type = "object",
         Required = new HashSet<string>() 
@@ -85,7 +99,6 @@ public class User
         {
             ["fullName"] = new OpenApiSchema
             {
-                ReadOnly = true,
                 Title = "Name",
                 Type = OpenApiDataType.String,
             },
@@ -93,6 +106,18 @@ public class User
             {
                 Title = "Email address",
                 Type = OpenApiDataType.String,
+            },
+            ["isSecurityAdmin"] = new OpenApiSchema
+            {
+                Format = OpenApiBooleanFormat.Choice,
+                Title = "Security admin",
+                Type = OpenApiDataType.Boolean
+            },
+            ["isUserAdmin"] = new OpenApiSchema
+            {
+                Format = OpenApiBooleanFormat.Choice,
+                Title = "User admin",
+                Type = OpenApiDataType.Boolean
             },
             ["type"] = new OpenApiSchema
             {
@@ -102,14 +127,6 @@ public class User
                 {
                     new OpenApiString("Basic"),
                     new OpenApiString("Admin")
-                }
-            },
-            ["roles"] = new OpenApiSchema
-            {
-                Reference = new OpenApiReference()
-                {
-                    Id = "Roles",
-                    Type = ReferenceType.Schema
                 }
             },
             ["isActive"] = new OpenApiSchema

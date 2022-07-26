@@ -1,122 +1,146 @@
 ﻿@using HyperUI.Core
+@using Microsoft.OpenApi.Any
 @using Microsoft.OpenApi.Models
-@using System.Text.Json
 
 @namespace HyperUI.Blazor.Internal
 
-@foreach ((string propertyKey, OpenApiSchema propertySchema) in _propertySchemas)
+@foreach (PropertyGroup propertyGroup in _propertyGroups)
 {
-    <DynamicComponent Type="@propertySchema.GetComponentType()" />
+	<MudTd DataLabel="@propertyGroup.Name">
+        <MudGrid Spacing="4">
+		    @foreach (string propertyKey in propertyGroup.PropertyKeys)
+		    {
+                (IDictionary<string, object?> parameters, Type type) = GetComponentConfiguration(
+                    propertyKey,
+                    TableContext.GetValueOrDefault(propertyKey),
+                    IsReadOnly,
+                    EventCallback.Factory.Create<object>(this, changedValue => 
+                        TableContext.TrySet(propertyKey, changedValue)));
 
-    <MudTd DataLabel="@propertyKey">
-        @if (propertySchema.Type == OpenApiDataType.Boolean)
-		{
-			// Render switches for boolean properties
-			<MudSwitch Checked="@_tableContext.GetValueOrDefault(propertyKey)"
-                       Disabled="true" />
-        }
-        else if (IsSchemaReference(propertySchema, out OpenApiSchema? referencedSchema))
-        {
-            // Render schema references
-            IEnumerable<NestedProperty>? nestedProperties = referencedSchema?
-                .TryGetNestedProperties(_tableContext.GetValueOrDefault(propertyKey));
-
-			if (nestedProperties?.Any() == true)
-			{
-				// Render read-only checkboxes for nested boolean properties
-				foreach (NestedProperty nestedProperty in nestedProperties)
-				{
-					if (nestedProperty.Type == OpenApiDataType.Boolean)
-					{
-						<MudCheckBox Checked="@nestedProperty.Value"
-									 Class="@(nestedProperty.IsLast ? "" : "mr-7")"
-								     Dense="true"
-									 Disabled="true"
-									 Label="@nestedProperty.Title"
-									 Style="margin-top: 6px;"/>
-					}
-				}
-			}
-		}
-		else
-		{
-			// Render text for other types
-			@_tableContext.GetValueOrDefault(propertyKey)
-		}
-    </MudTd>
+                <MudItem lg="@GetBreakpoint(propertyGroup)">
+			        <DynamicComponent 
+				        Parameters="@parameters"
+				        Type="@type" />
+                </MudItem>
+		    }
+        </MudGrid>
+	</MudTd>
 }
 <MudTd>
-    @if (_tableContext.CanDelete())
-    {
-        <MudIconButton aria-label="delete"
-                        Icon="@Icons.Material.Filled.Delete"
-                        OnClick="@(() => OnDelete(@_tableContext.GetValueOrDefault("@id")))">
-        </MudIconButton>
-    }
+	@if (@TableContext.CanDelete())
+	{
+		<MudIconButton aria-label="delete"
+                       Class="my-n1"
+			           Icon="@Icons.Material.Filled.Delete"
+                       OnClick="@(() => OnDelete(@TableContext.GetValueOrDefault("@id")))">
+		</MudIconButton>
+	}
 </MudTd>
 
+<style>
+    input {
+        font-size: @_inputFontSize !important;
+    }
+</style>
+
 @code {
-    // Property schemas
-    private IDictionary<string, OpenApiSchema> _propertySchemas = 
-        new Dictionary<string, OpenApiSchema>();
+    // Bool property converter for nullable objects
+    private readonly BoolConverter<object?> _boolPropertyConverter = new()
+    {
+        GetFunc = value => value == true,
+        SetFunc = boolObject => boolObject is bool value && value,
+    };
 
-    // Table context
-    private Dictionary<string, object?> _tableContext = new();
+    // Theming doesn't give control over the selected value in select elements, so it has to be
+    // overridden in CSS
+    private readonly string _inputFontSize = "0.875em";
 
-    [EditorRequired]
-    [Parameter]
-    public EventCallback<object?> OnDeleteButtonClickedCallback { get; set; }
+    // Property groups
+    private IEnumerable<PropertyGroup> _propertyGroups = Enumerable.Empty<PropertyGroup>();
 
     /// <summary>
-    /// Property schemas.
+    /// Read-only indicator for rows.
+    /// </summary>
+    [Parameter]
+    public bool IsReadOnly { get; set; } = false; 
+
+    /// <summary>
+    /// Delete callback.
+    /// </summary>
+    [Parameter]
+    public EventCallback<object?> OnDeleteCallback { get; set; }
+
+    /// <summary>
+    /// Schema.
     /// </summary>
     [EditorRequired]
     [Parameter]
-    public IDictionary<string, OpenApiSchema>? PropertySchemas { get; set; }
-
-    /// <summary>
-    /// Delegate function for resolving referenced schemas.
-    /// </summary>
-    [EditorRequired]
-    [Parameter]
-    public Func<OpenApiSchema, OpenApiSchema?>? ResolveSchemaReferenceDelegate { get; set; }
+    public OpenApiSchema Schema { get; set; } = new();
 
     /// <summary>
     /// Table context.
     /// </summary>
     [EditorRequired]
     [Parameter]
-    public Dictionary<string, object?>? TableContext { get; set; }
+    public Dictionary<string, object?> TableContext { get; set; } = new();
 
     /// <inheritdoc/>
     protected override void OnInitialized()
     {
-        if (PropertySchemas != null)
-            _propertySchemas = PropertySchemas;
-
-        if (TableContext != null)
-            _tableContext = TableContext;
+        _propertyGroups = Schema.GetPropertyGroups(true);
     }
 
     /// <summary>
-    /// Determines whether a property schema is a schema reference.
+    /// Gets a grid item breakpoint.
     /// </summary>
-    /// <param name="propertySchema">Property schema.</param>
-    /// <param name="resolvedSchemaReference">
-    /// The resolved schema reference if the property schema is a schema reference.
-    /// </param>
-    /// <returns>
-    /// <see cref="true"/> if the property schema is a schema reference; <see cref="false"/>,
-    /// otherwise.
-    /// </returns>
-    private bool IsSchemaReference(
-        OpenApiSchema propertySchema, out OpenApiSchema? resolvedSchemaReference)
+    /// <param name="propertyGroup">Property group.</param>
+    /// <returns>Breakpoint.</returns>
+    private int GetBreakpoint(PropertyGroup propertyGroup)
     {
-        resolvedSchemaReference = ResolveSchemaReferenceDelegate != null ?
-            ResolveSchemaReferenceDelegate(propertySchema) : null;
-
-        return resolvedSchemaReference != null;
+        // MudGrid is based on a 12-point system. This gives full width to single-property groups 
+        // and lets MudBlazor handle spacing for multi-property groups.
+        return propertyGroup.PropertyKeys.Count() == 1 ? 12 : 0;
     }
+
+    /// <summary>
+    /// Gets component configuration for dynamically-rendered components.
+    /// </summary>
+    /// <param name="propertyKey">Property key.</param>
+    /// <param name="value">Value.</param>
+    /// <param name="isReadOnly">Read-only indicator.</param>
+    /// <param name="valueChangedCallback">Value changed callback</param>
+    /// <returns>Component configuration.</returns>
+    private (IDictionary<string, object?>, Type) GetComponentConfiguration(
+        string propertyKey,
+        object? value,
+        bool isReadOnly,
+        EventCallback<object> valueChangedCallback)
+    {
+        return Schema!.GetComponentConfiguration(
+            propertyKey,
+            value,
+            isReadOnly,
+            enumValues => SelectItemsBuilder(enumValues),
+            valueChangedCallback);
+    }
+
+    /// <summary>
+    /// Builds a <see cref="RenderFragment"/> of select items from OpenAPI enum values.
+    /// </summary>
+    /// <param name="enumValues">Enum values.</param>
+    /// <returns><see cref="RenderFragment/>.</returns>
+    private RenderFragment SelectItemsBuilder(IList<IOpenApiAny> enumValues) => builder =>
+    {
+        foreach (IOpenApiAny enumValue in enumValues)
+        {
+            object enumValueObject = 
+				(enumValue as OpenApiString)?.Value ?? "Invalid enum value";
+
+            builder.OpenComponent<MudSelectItem<object>>(0);
+            builder.AddAttribute(1, "Value", enumValueObject);
+            builder.CloseComponent();
+        }
+    };
 
     /// <summary>
     /// Handles deletes.
@@ -125,6 +149,6 @@
     /// <returns>The result of the async task.</returns>
     private async Task OnDelete(object? idObject)
     {
-        await OnDeleteButtonClickedCallback.InvokeAsync(idObject);
+        await OnDeleteCallback.InvokeAsync(idObject);
     }
 }

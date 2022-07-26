@@ -56,7 +56,7 @@ public static class MockHttpMessageHandlerExtensions
                 if (user == null)
                     return new HttpResponseMessage(HttpStatusCode.BadRequest);
 
-                user.Id = new Uri(new Uri(usersUrl), Guid.NewGuid().ToString()).ToString();
+                user.Id = new Uri($"{usersUrl}/{Guid.NewGuid()}").ToString();
 
                 user.Operations = new[]
                 {
@@ -82,8 +82,6 @@ public static class MockHttpMessageHandlerExtensions
     private static void ConfigureDeleteUserResponse(
         MockHttpMessageHandler messageHandler, string usersUrl)
     {
-        //string userName = UserApi.GetUsers().Single(user => user.)
-
         messageHandler
             .When(HttpMethod.Delete, $"{usersUrl}/*")
             .Respond(request =>
@@ -95,6 +93,10 @@ public static class MockHttpMessageHandlerExtensions
                     "User removed.");
 
                 HttpResponseMessage response = new(HttpStatusCode.OK);
+
+                response.Content = new StringContent(JsonSerializer.Serialize(status));
+
+                response.Content.Headers.ContentType = new("application/ld+json");
 
                 return response;
             });

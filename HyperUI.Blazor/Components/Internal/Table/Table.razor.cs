@@ -1,19 +1,12 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using HyperUI.Core;
+using Microsoft.AspNetCore.Components;
 using Microsoft.OpenApi.Models;
 using MudBlazor;
-using System.Text.Json;
 
 namespace HyperUI.Blazor.Internal;
 
 public partial class Table : ComponentBase
 {
-    // Bool property converter for nullable objects
-    private readonly BoolConverter<object?> _boolPropertyConverter = new()
-    {
-        GetFunc = value => value == true,
-        SetFunc = boolObject => boolObject is bool value && value,
-    };
-
     // A cache of the original values of an item being edited
     Dictionary<string, object?>? _cachedItem = null;
 
@@ -28,6 +21,9 @@ public partial class Table : ComponentBase
 
     // Loading state
     private bool _isLoading = false;
+
+    // Property groups
+    private IEnumerable<PropertyGroup> _propertyGroups = Enumerable.Empty<PropertyGroup>();
 
     // Item property schemas
     private IDictionary<string, OpenApiSchema> _propertySchemas =
@@ -101,6 +97,9 @@ public partial class Table : ComponentBase
 
         _canAdd = OnAddCallback.HasDelegate == true;
         _hasActions = Items?.Any(i => i.HasActions()) ?? false;
+
+        if (Schema != null)
+            _propertyGroups = Schema.GetPropertyGroups(true);
     }
 
     /// <summary>
@@ -202,10 +201,10 @@ public partial class Table : ComponentBase
     }
 
     /// <summary>
-    /// Handles the OnClick event of a row's delete button.
+    /// Handles deletes.
     /// </summary>
     /// <param name="idObject">Id of the row item.</param>
-    private async Task OnDeleteButtonClicked(object? idObject)
+    private async Task OnDelete(object? idObject)
     {
         if (idObject is string id)
         {

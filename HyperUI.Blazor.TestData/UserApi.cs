@@ -129,11 +129,12 @@ public static class UserApi
             FullName = "Jane Doe",
             Id = "https://api.example.com/users/1",
             IsActive = true,
+            IsSecurityAdmin = true,
+            IsUserAdmin = true,
             Operations = new[]
             {
                 new Operation(Method.Put)
             },
-            Roles = new(true, true),
             Type = "Admin"
         };
 
@@ -143,7 +144,8 @@ public static class UserApi
             FullName = "Zhang Xia",
             Id = $"https://api.example.com/users/2",
             IsActive = true,
-            Roles = new(true, true),
+            IsSecurityAdmin = true,
+            IsUserAdmin = true,
             Type = "Admin"
         };
 
@@ -153,12 +155,13 @@ public static class UserApi
             FullName = "Panashe Mutsipa",
             Id = "https://api.example.com/users/3",
             IsActive = true,
+            IsSecurityAdmin = true,
+            IsUserAdmin = false,
             Operations = new[]
             {
                 new Operation(Method.Delete),
                 new Operation(Method.Put)
             },
-            Roles = new(true, false),
             Type = "Basic"
         };
 
@@ -168,12 +171,13 @@ public static class UserApi
             FullName = "Vera Ilyinichna",
             Id = "https://api.example.com/users/4",
             IsActive = true,
+            IsSecurityAdmin = false,
+            IsUserAdmin = true,
             Operations = new[]
             {
                 new Operation(Method.Delete),
                 new Operation(Method.Put)
             },
-            Roles = new(false, true),
             Type = "Basic"
         };
 
@@ -183,12 +187,13 @@ public static class UserApi
             FullName = "Harpa Stefansdottir",
             Id = "https://api.example.com/users/5",
             IsActive = false,
+            IsSecurityAdmin = false,
+            IsUserAdmin = false,
             Operations = new[]
             {
                 new Operation(Method.Delete),
                 new Operation(Method.Put)
             },
-            Roles = new(false, false),
             Type = "Basic"
         };
 
@@ -198,12 +203,13 @@ public static class UserApi
             FullName = "Sato Gota",
             Id = "https://api.example.com/users/6",
             IsActive = true,
+            IsSecurityAdmin = false,
+            IsUserAdmin = false,
             Operations = new[] 
             {
                 new Operation(Method.Delete),
                 new Operation(Method.Put)
             },
-            Roles = new(false, false),
             Type = "Basic"
         };
     }

@@ -1,7 +1,8 @@
 ﻿using HyperUI.Core;
+using Microsoft.AspNetCore.Components;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using MudBlazor;
-using System.Text.Json;
 
 namespace HyperUI.Blazor.Internal;
 
@@ -10,63 +11,164 @@ namespace HyperUI.Blazor.Internal;
 /// </summary>
 internal static class OpenApiSchemaExtensions
 {
-    public static Type GetComponentType(this OpenApiSchema schema)
+    // Boolean property converter
+    private static readonly BoolConverter<object?> _boolPropertyConverter = new()
     {
-        if (schema.Type == OpenApiDataType.Boolean)
-            return typeof(MudSwitch<bool?>);
+        GetFunc = value => value == true,
+        SetFunc = boolObject => boolObject is bool value && value,
+    };
 
-        if (schema.Type == OpenApiDataType.String)
-            return typeof(TextInput);
+    // String property converter for nullable objects
+    private static readonly Converter<object?> _stringPropertyConverter = new()
+    {
+        SetFunc = stringObject => stringObject?.ToString(),
+        GetFunc = text => (object?)text,
+    };
 
-        throw new NotImplementedException();
+    /// <summary>
+    /// Gets configuration for dynamically-rendered components based on
+    /// <see cref="OpenApiSchema"/>s.
+    /// </summary>
+    /// <param name="objectSchema">Object schema.</param>
+    /// <param name="propertyKey">Property key.</param>
+    /// <param name="value">Property value.</param>
+    /// <param name="isReadOnlyOverride">Overrides <see cref="OpenApiSchema.ReadOnly"/>.</param>
+    /// <param name="selectItemsBuilder">Builder for select items.</param>
+    /// <param name="valueChangedCallback">Value changed callback</param>
+    /// <returns>Component configuration.</returns>
+    public static (IDictionary<string, object?>, Type) GetComponentConfiguration(
+        this OpenApiSchema objectSchema,
+        string propertyKey,
+        object? value,
+        bool isReadOnlyOverride,
+        Func<IList<IOpenApiAny>, RenderFragment> selectItemsBuilder,
+        EventCallback<object> valueChangedCallback)
+    {
+        // Property schema not found
+        if (!objectSchema.Properties.TryGetValue(propertyKey, out OpenApiSchema? propertySchema))
+            return NothingConfiguration(propertyKey, "Schema not found");
+
+        bool isReadOnly = isReadOnlyOverride || propertySchema.ReadOnly;
+
+        // Boolean schema type
+        if (propertySchema.Type == OpenApiDataType.Boolean)
+        {
+            return BooleanConfiguration(
+                propertySchema, propertyKey, value, isReadOnly, valueChangedCallback);
+        }
+
+        // String schema type
+        if (propertySchema.Type == OpenApiDataType.String)
+        {
+            return StringConfiguration(
+                propertySchema, value, isReadOnly, selectItemsBuilder, valueChangedCallback);
+        }
+
+        // Unsupported schema type
+        return NothingConfiguration(propertyKey, "Unsupported schema type");
     }
 
     /// <summary>
-    /// Tries to get nested properties.
+    /// Configuration for components that render boolean properties.
     /// </summary>
     /// <param name="propertySchema">Property schema.</param>
-    /// <param name="property">Property object.</param>
-    /// <returns>Nested properties, if they could be retrieved.</returns>
-    public static IEnumerable<NestedProperty>? TryGetNestedProperties(
-        this OpenApiSchema? propertySchema, object? property)
+    /// <param name="propertyKey">Property key.</param>
+    /// <param name="value">Value.</param>
+    /// <param name="isReadOnly">Read-only indicator.</param>
+    /// <returns>Configuration.</returns>
+    private static (IDictionary<string, object?>, Type) BooleanConfiguration(
+        OpenApiSchema propertySchema,
+        string propertyKey,
+        object? value,
+        bool isReadOnly,
+        EventCallback<object> valueChangedCallback)
     {
-        if (propertySchema == null || property is not JsonElement jsonObject)
-            return null;
+        Type type = typeof(MudSwitch<object?>);
 
-        List<NestedProperty> nestedProperties = new();
-
-        Dictionary<string, JsonElement>? parentPropertyMap =
-            property as Dictionary<string, JsonElement>;
-
-        IEnumerable<KeyValuePair<string, OpenApiSchema>> allNestedSchemasButLast =
-            propertySchema.Properties.SkipLast(1);
-
-        foreach (KeyValuePair<string, OpenApiSchema> nestedSchema in allNestedSchemasButLast)
+        Dictionary<string, object?> booleanParameters = new()
         {
-            GetNestedProperty(nestedSchema);
+            ["Checked"] = value,
+            ["Disabled"] = isReadOnly,
+            ["StopClickPropagation"] = !isReadOnly,
+            ["CheckedChanged"] = valueChangedCallback
+        };
+
+        if (!isReadOnly)
+            booleanParameters.Add("Converter", _boolPropertyConverter);
+
+        if (propertySchema.Format == OpenApiBooleanFormat.Choice)
+        {
+            booleanParameters.Add("Dense", true);
+            booleanParameters.Add("Label", propertySchema.Title ?? propertyKey);
+            booleanParameters.Add("Style", "margin-bottom: 2px;");
+
+            type = typeof(MudCheckBox<object?>);
         }
 
-        nestedProperties.AddRange(allNestedSchemasButLast
-            .Select(nestedSchema => GetNestedProperty(nestedSchema)));
+        return (booleanParameters, type);
+    }
 
-        nestedProperties.Add(GetNestedProperty(propertySchema.Properties.Last(), true));
-
-        return nestedProperties;
-
-        NestedProperty GetNestedProperty(
-            KeyValuePair<string, OpenApiSchema> schema, bool isLast = false)
-        {
-            object? value = null;
-
-            if (jsonObject.TryGetProperty(
-                schema.Key, out JsonElement jsonElement) == true)
+    /// <summary>
+    /// Configuration for the <see cref="Nothing"/> component.
+    /// </summary>
+    /// <param name="propertyKey">Property key for which nothing will be displayed.</param>
+    /// <param name="message">Message.</param>
+    /// <returns>Configuration.</returns>
+    private static (IDictionary<string, object?>, Type) NothingConfiguration(
+        string propertyKey, string message)
+    {
+        return
+        (
+            new Dictionary<string, object?>()
             {
-                value = jsonElement.GetValue();
-            }
+                ["PropertyKey"] = propertyKey,
+                ["Message"] = message
+            },
+            typeof(Nothing)
+        );
+    }
 
-            OpenApiSchema schemaValue = schema.Value;
+    /// <summary>
+    /// Configuration for components that render string properties.
+    /// </summary>
+    /// <param name="propertySchema">Property schema.</param>
+    /// <param name="value">Value.</param>
+    /// <param name="isReadOnly">Read-only indicator.</param>
+    /// <param name="selectItemsBuilder">
+    /// Function for building a <see cref="RenderFragment"/> of <see cref="MudSelectItem{T}"/>s.
+    /// </param>
+    /// <param name="valueChangedCallback">Value changed callback</param>
+    /// <returns>Configuration</returns>
+    private static (IDictionary<string, object?>, Type) StringConfiguration(
+        OpenApiSchema propertySchema,
+        object? value,
+        bool isReadOnly,
+        Func<IList<IOpenApiAny>, RenderFragment> selectItemsBuilder,
+        EventCallback<object> valueChangedCallback)
+    {
+        Dictionary<string, object?> stringParameters = new()
+        {
+            ["Value"] = value
+        };
 
-            return new(isLast, schemaValue.Type, schemaValue.Title, value);
+        if (isReadOnly)
+            return (stringParameters, typeof(ReadOnlyText));
+
+        stringParameters.Add("Class", "mb-4");
+        stringParameters.Add("Margin", Margin.Dense);
+        stringParameters.Add("ValueChanged", valueChangedCallback);
+
+        if (propertySchema.Enum.Any())
+        {
+            stringParameters.Add("T", typeof(object));
+            stringParameters.Add("ChildContent", selectItemsBuilder(propertySchema.Enum));
+            stringParameters.Add("AnchorOrigin", Origin.BottomCenter);
+
+            return (stringParameters, typeof(MudSelect<object>));
         }
+
+        stringParameters.Add("Converter", _stringPropertyConverter);
+
+        return (stringParameters, typeof(MudTextField<object?>));
     }
 }

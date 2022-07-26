@@ -229,7 +229,7 @@
 			else
 			{
 				message = await deleteResponse
-					.TryGetStatusDescriptionAsync() ?? "Failed to remove item";
+					.TryGetStatusDescriptionAsync() ?? $"Failed to remove item.";
 			}
 
 			// Show the message in a snackbar

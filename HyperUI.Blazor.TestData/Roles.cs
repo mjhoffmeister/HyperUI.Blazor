@@ -54,10 +54,6 @@ public class Roles
         {
             ["isSecurityAdmin"] = new OpenApiSchema
             {
-                Extensions = new Dictionary<string, IOpenApiExtension>()
-                {
-                    ["x-group"] = new OpenApiString("Role")
-                },
                 Title = "Security admin",
                 Type = OpenApiDataType.Boolean
             },

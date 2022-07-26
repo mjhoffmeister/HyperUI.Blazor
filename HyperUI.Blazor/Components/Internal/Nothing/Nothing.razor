@@ -1,0 +1,19 @@
+﻿@namespace HyperUI.Blazor.Internal
+
+<span data-message="" data-property-key=""></span>
+
+@code {
+    /// <summary>
+    /// The property key for which a component couldn't be rendered.
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public string? PropertyKey { get; set; }
+
+    /// <summary>
+    /// A message indicating why a component couldn't be rendered for the property key.
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public string? Message { get; set; }
+}

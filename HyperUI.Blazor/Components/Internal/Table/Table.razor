@@ -32,9 +32,9 @@
 		}
 	</ToolBarContent>
 	<HeaderContent>
-		@foreach ((_, OpenApiSchema propertySchema) in _propertySchemas)
+		@foreach (PropertyGroup propertyGroup in _propertyGroups)
 		{
-			<MudTh>@propertySchema.Title</MudTh>
+			<MudTh>@propertyGroup.Name</MudTh>
 		}
 		@if (_hasActions)
 		{
@@ -42,60 +42,15 @@
 		}
 	</HeaderContent>
 	<RowTemplate>
-		<HyperUIRowTemplate OnDeleteButtonClickedCallback="OnDeleteButtonClicked"
-			                PropertySchemas="@_propertySchemas"
-							ResolveSchemaReferenceDelegate="ResolveSchemaReference"
-							TableContext="@context" />
+		<HyperUIRowTemplate IsReadOnly="true"
+			                OnDeleteCallback="OnDelete"
+			                Schema="@Schema"
+			                TableContext="@context" />
 	</RowTemplate>
 	<RowEditingTemplate>
-		@foreach ((string propertyKey, OpenApiSchema propertySchema) in _propertySchemas)
-		{
-			<MudTd DataLabel="@propertyKey">
-				@if (propertySchema.ReadOnly
-				     || (!@context.CanEdit() && _editState != TableEditState.EditingNewItem))
-				{
-					if (propertySchema.Type == OpenApiDataType.Boolean)
-					{
-						<MudSwitch Checked="@context.GetValueOrDefault(propertyKey)"
-						           Disabled="true" />
-					}
-					else
-					{
-						@context.GetValueOrDefault(propertyKey);
-					}
-				}
-				else if (propertySchema.Type == OpenApiDataType.Boolean)
-				{
-					<MudSwitch @bind-Checked="@context[propertyKey]"
-							   Color="Color.Primary"
-					           Converter="@_boolPropertyConverter" />
-				}
-				else if (propertySchema.Enum.Any())
-				{
-					<MudSelect 
-                        @bind-Value="@context[propertyKey]"
-                        T="object"
-						AnchorOrigin="Origin.BottomCenter"
-                        Label="@propertySchema.Title"
-                        Variant="Variant.Outlined">
-                        @foreach (IOpenApiAny value in propertySchema.Enum)
-                        {
-							object valueObject = 
-								(value as OpenApiString)?.Value ?? "Invalid enum value";
-
-							// TODO: log and don't render invalid enum values
-
-                            <MudSelectItem T="object" Value="@valueObject"/>
-                        }
-                    </MudSelect>
-                }
-                else
-                {
-                    <MudTextField 
-						@bind-Value="@context[propertyKey]"
-						Converter="@_stringPropertyConverter" />
-                }
-			</MudTd>
-		}
+		<HyperUIRowTemplate IsReadOnly="false"
+			                OnDeleteCallback="OnDelete"
+			                Schema="@Schema"
+			                TableContext="@context" />
 	</RowEditingTemplate>
 </MudTable>

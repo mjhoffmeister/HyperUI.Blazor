@@ -3,18 +3,18 @@
 
 @namespace HyperUI.Blazor.Internal
 
-@if (IsReadOnly || Schema.ReadOnly)
+@if (IsReadOnly)
 {
-    @Value
+    @TextValue
 }
-else if (Schema.Enum.Any())
+else if (Schema?.Enum.Any() == true)
 {
     <MudSelect 
-        @bind-Value="@Value"
+        @bind-Value="@TextValue"
         T="object"
 		AnchorOrigin="Origin.BottomCenter"
-        Label="@Schema.Title"
-        Variant="Variant.Outlined">
+        Class="mb-4"
+        Margin="Margin.Dense">
         @foreach (IOpenApiAny value in Schema.Enum)
         {
 			object valueObject = 
@@ -28,7 +28,11 @@ else if (Schema.Enum.Any())
 }
 else
 {
-    <MudTextField @bind-Value="@Value" />
+    // TODO: just pick directly from DynamicComponent?
+    <MudTextField @bind-Value="@TextValue"
+                  Converter="@_stringPropertyConverter"
+                  Class="mb-4"
+                  Margin="Margin.Dense"/>
 }
 
 @code {
@@ -48,12 +52,14 @@ else
     /// <summary>
     /// OpenAPI schema for the value.
     /// </summary>
+    [EditorRequired]
     [Parameter]
-    public OpenApiSchema Schema { get; set; }
+    public OpenApiSchema? Schema { get; set; }
 
     /// <summary>
     /// Value.
     /// </summary>
+    [EditorRequired]
     [Parameter]
-    public object? Value { get; set; }
+    public object? TextValue { get; set; }
 }
