@@ -29,7 +29,7 @@
                        Edge="Edge.Start"
                        Icon="@Icons.Material.Filled.Menu"
                        OnClick="@((e) => ToggleNavMenuDrawer())"/>
-        <MudText Typo="Typo.h5" Class="ml-3">Application</MudText>
+        <MudText Typo="Typo.h5" Class="ml-3">@_appName</MudText>
         <MudSpacer />
         <ThemeToggle @bind-IsDarkMode="@_isDarkMode" />
         <AccountButton />
@@ -66,6 +66,8 @@
 </MudLayout>
 
 @code {
+    private string _appName = "Application";
+
     private bool _hasNavMenuLinkPaths = false;
 
     private bool _isNavMenuDrawerOpen = true;
@@ -134,6 +136,7 @@
             }
         };
 
+    /// <inheritdoc/>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && _mudThemeProvider != null)
@@ -143,8 +146,15 @@
         }
     }
 
+    /// <inheritdoc/>
     protected override async Task OnInitializedAsync()
     {
+        // Set the app name from configuration, if present
+        string? appName = Configuration["HyperUI:AppName"];
+
+        if (appName != null)
+            _appName = appName;
+
         string? openApiDocumentationUrl = Configuration["OpenApi:DocumentationUrl"];
 
         if (openApiDocumentationUrl != null)
