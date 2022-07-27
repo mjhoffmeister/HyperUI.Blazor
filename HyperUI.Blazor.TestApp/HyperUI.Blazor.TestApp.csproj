@@ -7,6 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="MockApi\**" />
+    <Compile Remove="Shared\**" />
+    <Content Remove="MockApi\**" />
+    <Content Remove="Shared\**" />
+    <EmbeddedResource Remove="MockApi\**" />
+    <EmbeddedResource Remove="Shared\**" />
+    <None Remove="MockApi\**" />
+    <None Remove="Shared\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="bunit" Version="1.9.8" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.7" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.7" PrivateAssets="all" />
@@ -19,11 +30,6 @@
   <ItemGroup>
     <ProjectReference Include="..\HyperUI.Blazor.TestData\HyperUI.Blazor.TestData.csproj" />
     <ProjectReference Include="..\HyperUI.Blazor\HyperUI.Blazor.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="MockApi\" />
-    <Folder Include="Shared\" />
   </ItemGroup>
 
 </Project>

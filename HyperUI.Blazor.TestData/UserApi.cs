@@ -24,46 +24,6 @@ public static class UserApi
         },
         Paths = new()
         {
-            ["/requests"] = new()
-            {
-                Summary = "Requests",
-                Extensions = new Dictionary<string, IOpenApiExtension>()
-                {
-                    ["x-icon-hint"] = new OpenApiString("People"),
-                    ["x-is-nav-menu-link"] = new OpenApiBoolean(true),
-                },
-                Operations = new Dictionary<OperationType, OpenApiOperation>
-                {
-                    [OperationType.Get] = new()
-                    {
-                        Responses = new()
-                        {
-                            ["200"] = new()
-                            {
-                                Content = new Dictionary<string, OpenApiMediaType>()
-                                {
-                                    ["application/ld+json"] = new()
-                                    {
-                                        Schema = new()
-                                        {
-                                            Type = "array",
-                                            Items = new()
-                                            {
-                                                Reference = new()
-                                                {
-                                                    Id = "FormLink",
-                                                    Type = ReferenceType.Schema
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                Description = "OK",
-                            }
-                        }
-                    }
-                },
-            },
             ["/users"] = new()
             {
                 Summary = "Users",
