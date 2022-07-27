@@ -57,7 +57,7 @@ public class TableTests : TestContext
     }
 
     [Theory]
-    [InlineData(1, 6)]
+    [InlineData(1, 18)]
     public void Render_UserTable_RendersExpectedDisabledCheckboxCount(
         int expectedIsActiveCheckboxCount, int expectedUserCount)
     {
@@ -74,26 +74,6 @@ public class TableTests : TestContext
         var disabledCheckboxes = userTable.FindAll("input[type=\"checkbox\"]:disabled");
 
         Assert.Equal(expectedDisabledCheckboxCount, disabledCheckboxes.Count);
-    }
-
-    [Theory]
-    [InlineData(2, 6)]
-    public void Render_UserTable_RendersExpectedReadOnlyCheckboxCount(
-        int expectedRoleCount, int expectedUserCount)
-    {
-        // Arrange
-
-        int expectedReadOnlyCheckboxCount = expectedRoleCount * expectedUserCount;
-
-        // Act
-
-        var userTable = RenderUserTable();
-
-        // Assert
-
-        var readonlyCheckboxes = userTable.FindAll(".mud-checkbox .mud-readonly");
-
-        Assert.Equal(expectedReadOnlyCheckboxCount, readonlyCheckboxes.Count);
     }
 
     [Fact]
@@ -159,7 +139,7 @@ public class TableTests : TestContext
     }
 
     [Fact]
-    public void OnClickFirstRow_UserTable_RendersOneEnabledCheckbox()
+    public void OnClickFirstRow_UserTable_RendersThreeEnabledCheckboxes()
     {
         // Arrange
 
@@ -175,7 +155,7 @@ public class TableTests : TestContext
 
         var enabledCheckboxes = userTable.FindAll("input[type=\"checkbox\"]:enabled");
 
-        Assert.Equal(1, enabledCheckboxes.Count);
+        Assert.Equal(3, enabledCheckboxes.Count);
     }
 
     [Fact]
@@ -202,7 +182,7 @@ public class TableTests : TestContext
     }
 
     [Fact]
-    public void OnClickFirstRow_UserTable_RendersTwoTextFields()
+    public void OnClickFirstRow_UserTable_RendersThreeTextFields()
     {
         // Arrange
 
@@ -216,29 +196,9 @@ public class TableTests : TestContext
 
         // Assert
 
-        var textInputs = userTable.FindAll(".mud-input-root-text");
+        var textInputs = userTable.FindAll("input[type=\"text\"]");
 
-        Assert.Equal(2, textInputs.Count);
-    }
-
-    [Fact]
-    public void OnClickSecondRow_UserTable_DoesNotRenderInputs()
-    {
-        // Arrange
-
-        var userTable = RenderUserTable();
-
-        var secondRow = userTable.Find("tbody tr:nth-child(2)");
-
-        // Assert
-
-        secondRow.Click();
-
-        // Assert
-
-        var inputs = userTable.FindAll("input:enabled");
-
-        Assert.Equal(0, inputs.Count);
+        Assert.Equal(3, textInputs.Count);
     }
 
     /// <summary>
