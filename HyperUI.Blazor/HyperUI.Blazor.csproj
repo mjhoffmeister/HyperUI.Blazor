@@ -4,7 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <Authors>Matt Hoffmeister</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>Provides components for HyperUI Blazor clients.</Description>
@@ -29,6 +29,12 @@
 
   <ItemGroup>
     <Folder Include="Components\Internal\SelectItems\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="ILLink.Descriptors.xml">
+      <LogicalName>ILLink.Descriptors.xml</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>
