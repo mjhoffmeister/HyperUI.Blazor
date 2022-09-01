@@ -122,7 +122,7 @@ public class TableTests : TestContext
         {
             // The first row with a delete button rendered should be for a user with the below
             // id. See User.GetSampleCollection() for more info.
-            isOnDeleteFired = id == "https://api.example.com/users/3";
+            isOnDeleteFired = id == "https://api.example.com/users/5";
         }
 
         var userTable = RenderUserTable(onDelete: onDelete);
