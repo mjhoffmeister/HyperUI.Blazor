@@ -24,6 +24,46 @@ public static class UserApi
         },
         Paths = new()
         {
+            ["/access-reviews"] = new()
+            {
+                Summary = "Access reviews",
+                Extensions = new Dictionary<string, IOpenApiExtension>()
+                {
+                    ["x-icon-hint"] = new OpenApiString("SafetyCheck"),
+                    ["x-is-nav-menu-link"] = new OpenApiBoolean(true),
+                },
+                Operations = new Dictionary<OperationType, OpenApiOperation>
+                {
+                    [OperationType.Get] = new()
+                    {
+                        Responses = new()
+                        {
+                            ["200"] = new()
+                            {
+                                Content = new Dictionary<string, OpenApiMediaType>()
+                                {
+                                    ["application/ld+json"] = new()
+                                    {
+                                        Schema = new()
+                                        {
+                                            Type = "array",
+                                            Items = new()
+                                            {
+                                                Reference = new()
+                                                {
+                                                    Id = "AccessReview",
+                                                    Type = ReferenceType.Schema
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                Description = "OK",
+                            }
+                        }
+                    }
+                },
+            },
             ["/users"] = new()
             {
                 Summary = "Users",
@@ -69,6 +109,7 @@ public static class UserApi
         {
             Schemas = new Dictionary<string, OpenApiSchema>
             {
+                ["AccessReview"] = AccessReview.GetOpenApiSchema(),
                 ["LinkCollection"] = RichLinkCollection.GetOpenApiSchema(),
                 ["RichLink"] = RichLink.GetOpenApiSchema(),
                 ["Roles"] = Roles.GetOpenApiSchema(),
@@ -78,11 +119,73 @@ public static class UserApi
     };
 
     /// <summary>
+    /// Gets test access reviews.
+    /// </summary>
+    /// <returns>Test access reviews.</returns>
+    public static IEnumerable<AccessReview> GetAccessReviews()
+    {
+        yield return new AccessReview
+        {
+            Day = "Monday",
+            Description = "Cloud admin access",
+            Id = "https://api.example.com/access-requests/1",
+            Operations = new[]
+            {
+                new Operation(Method.Delete),
+                new Operation(Method.Put)
+            },
+            Time = "09:00"
+        };
+
+        yield return new AccessReview
+        {
+            Day = "Wednesday",
+            Description = "Temporary cloud resource access",
+            Id = "https://api.example.com/access-requests/3",
+            Operations = new[]
+    {
+                new Operation(Method.Delete),
+                new Operation(Method.Put)
+            },
+            Time = "13:00"
+        };
+
+        yield return new AccessReview
+        {
+            Day = "Friday",
+            Description = "Local admin access",
+            Id = "https://api.example.com/access-requests/2",
+            Operations = new[]
+            {
+                new Operation(Method.Delete),
+                new Operation(Method.Put)
+            },
+            Time = "10:00"
+        };
+    }
+
+    /// <summary>
     /// Gets test users.
     /// </summary>
     /// <returns>Test users./returns>
     public static IEnumerable<User> GetUsers()
     {
+        yield return new User
+        {
+            EmailAddress = "harpa.stefansdottir@example.com",
+            FullName = "Harpa Stefansdottir",
+            Id = "https://api.example.com/users/5",
+            IsActive = false,
+            IsSecurityAdmin = false,
+            IsUserAdmin = false,
+            Operations = new[]
+            {
+                new Operation(Method.Delete),
+                new Operation(Method.Put)
+            },
+            Type = "Basic"
+        };
+
         yield return new User
         {
             EmailAddress = "jane.doe@example.com",
@@ -100,17 +203,6 @@ public static class UserApi
 
         yield return new User
         {
-            EmailAddress = "zhang.xia@example.com",
-            FullName = "Zhang Xia",
-            Id = $"https://api.example.com/users/2",
-            IsActive = true,
-            IsSecurityAdmin = true,
-            IsUserAdmin = true,
-            Type = "Admin"
-        };
-
-        yield return new User
-        {
             EmailAddress = "panashe.mutsipa@example.com",
             FullName = "Panashe Mutsipa",
             Id = "https://api.example.com/users/3",
@@ -118,7 +210,23 @@ public static class UserApi
             IsSecurityAdmin = true,
             IsUserAdmin = false,
             Operations = new[]
-            {
+        {
+                new Operation(Method.Delete),
+                new Operation(Method.Put)
+            },
+            Type = "Basic"
+        };
+
+        yield return new User
+        {
+            EmailAddress = "sato.gota@example.com",
+            FullName = "Sato Gota",
+            Id = "https://api.example.com/users/6",
+            IsActive = true,
+            IsSecurityAdmin = false,
+            IsUserAdmin = false,
+            Operations = new[]
+    {
                 new Operation(Method.Delete),
                 new Operation(Method.Put)
             },
@@ -134,7 +242,7 @@ public static class UserApi
             IsSecurityAdmin = false,
             IsUserAdmin = true,
             Operations = new[]
-            {
+        {
                 new Operation(Method.Delete),
                 new Operation(Method.Put)
             },
@@ -143,34 +251,13 @@ public static class UserApi
 
         yield return new User
         {
-            EmailAddress = "harpa.stefansdottir@example.com",
-            FullName = "Harpa Stefansdottir",
-            Id = "https://api.example.com/users/5",
-            IsActive = false,
-            IsSecurityAdmin = false,
-            IsUserAdmin = false,
-            Operations = new[]
-            {
-                new Operation(Method.Delete),
-                new Operation(Method.Put)
-            },
-            Type = "Basic"
-        };
-
-        yield return new User 
-        { 
-            EmailAddress = "sato.gota@example.com",
-            FullName = "Sato Gota",
-            Id = "https://api.example.com/users/6",
+            EmailAddress = "zhang.xia@example.com",
+            FullName = "Zhang Xia",
+            Id = $"https://api.example.com/users/2",
             IsActive = true,
-            IsSecurityAdmin = false,
-            IsUserAdmin = false,
-            Operations = new[] 
-            {
-                new Operation(Method.Delete),
-                new Operation(Method.Put)
-            },
-            Type = "Basic"
+            IsSecurityAdmin = true,
+            IsUserAdmin = true,
+            Type = "Admin"
         };
     }
 

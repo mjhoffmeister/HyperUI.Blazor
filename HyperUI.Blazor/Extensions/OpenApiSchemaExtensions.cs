@@ -152,16 +152,21 @@ internal static class OpenApiSchemaExtensions
         };
 
         if (isReadOnly)
+        {
+            if (TimeOnly.TryParse((string?)value, out TimeOnly time))
+                stringParameters["Value"] = time.ToString("h:mm tt");
+
             return (stringParameters, typeof(ReadOnlyText));
+        }
 
         stringParameters.Add("Class", "mb-4");
         stringParameters.Add("Margin", Margin.Dense);
         stringParameters.Add("ValueChanged", valueChangedCallback);
 
-        if (propertySchema.Enum.Any())
+        if (propertySchema.Enum.Any() || propertySchema.Format == OpenApiStringFormat.DayOfWeek)
         {
             stringParameters.Add("T", typeof(object));
-            stringParameters.Add("ChildContent", selectItemsBuilder(propertySchema.Enum));
+            stringParameters.Add("ChildContent", BuildSelectItems());
             stringParameters.Add("AnchorOrigin", Origin.BottomCenter);
 
             return (stringParameters, typeof(MudSelect<object>));
@@ -169,6 +174,17 @@ internal static class OpenApiSchemaExtensions
 
         stringParameters.Add("Converter", _stringPropertyConverter);
 
+        if (propertySchema.Format == OpenApiStringFormat.Time)
+            stringParameters.Add("InputType", InputType.Time);
+
         return (stringParameters, typeof(MudTextField<object?>));
+
+        RenderFragment BuildSelectItems()
+        {
+            if (propertySchema.Format == OpenApiStringFormat.DayOfWeek)
+                return DaysOfWeek.RenderSelectItems();
+
+            return selectItemsBuilder(propertySchema.Enum);
+        }
     }
 }

@@ -10,11 +10,7 @@ namespace HyperUI.Blazor.TestData;
 /// <summary>
 /// User model.
 /// </summary>
-/// <param name="FullName">Full name.</param>
-/// <param name="EmailAddress">Email address.</param>
-/// <param name="Type">Type.</param>
-/// <param name="IsActive">Active indicator.</param>
-public class User
+public class User : ApiObject
 {
     /// <summary>
     /// JSON-LD context.
@@ -35,12 +31,6 @@ public class User
     public string? FullName { get; set; }
 
     /// <summary>
-    /// JSON-LD id.
-    /// </summary>
-    [JsonPropertyName("@id")]
-    public string? Id { get; set; }
-
-    /// <summary>
     /// Active indicator.
     /// </summary>
     [JsonPropertyName("isActive")]
@@ -57,13 +47,6 @@ public class User
     /// </summary>
     [JsonPropertyName("isUserAdmin")]
     public bool? IsUserAdmin { get; set; }
-
-    /// <summary>
-    /// Hydra operations.
-    /// </summary>
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    [JsonPropertyName("operation")]
-    public IEnumerable<Operation>? Operations { get; set; }
 
     /// <summary>
     /// Type.

@@ -18,47 +18,64 @@ public static class MockHttpMessageHandlerExtensions
     /// Adds mock user API responses to the <see cref="MockHttpMessageHandler"/>.
     /// </summary>
     /// <param name="messageHandler"><see cref="MockHttpMessageHandler"/></param>
+    /// <param name="accessReviewsUrl">Access reviews URL.</param>
     /// <param name="documentationUrl">Documentation URL.</param>
     /// <param name="environmentsUrl">Environments URL.</param>
     /// <param name="imagesUrl">Images URL.</param>
     /// <param name="usersUrl">Users URL.</param>
     public static void AddMockUserApiResponses(
         this MockHttpMessageHandler messageHandler,
+        string accessReviewsUrl,
         string documentationUrl,
         string environmentsUrl,
         string imagesUrl,
         string usersUrl)
     {
-        ConfigureAddUserResponse(messageHandler, usersUrl);
-        ConfigureDeleteUserResponse(messageHandler, usersUrl);
-        ConfigureGetEnvironmentsResponse(messageHandler, environmentsUrl);
+        ConfigureAddResponse<AccessReview>(messageHandler, usersUrl);
+
+        ConfigureAddResponse<User>(messageHandler, usersUrl);
+
+        ConfigureDeleteResponse(messageHandler, accessReviewsUrl, "Access review");
+
+        ConfigureDeleteResponse(messageHandler, usersUrl, "User");
+
         ConfigureGetImageResponse(messageHandler, imagesUrl);
+
         ConfigureGetOpenApiDocumentationResponse(messageHandler, documentationUrl);
-        ConfigureGetUsersResponse(messageHandler, usersUrl);
+
+        ConfigureGetResponse(messageHandler, accessReviewsUrl, UserApi.GetAccessReviews());
+
+        ConfigureGetResponse(
+            messageHandler, environmentsUrl, new[] { "Development", "Test", "UAT", "Production" });
+
+        ConfigureGetResponse(messageHandler, usersUrl, UserApi.GetUsers());
     }
 
     /// <summary>
-    /// Configures the add user response.
+    /// Configures an add (POST) response.
     /// </summary>
-    /// <param name="messageHandler"><see cref="MockHttpMessageHandler"/>.</param>
-    /// <param name="usersUrl">Users URL.</param>
-    private static void ConfigureAddUserResponse(
-        MockHttpMessageHandler messageHandler, string usersUrl)
+    /// <typeparam name="T">Type of the item to add.</typeparam>
+    /// <param name="messageHandler">Message handler.</param>
+    /// <param name="url">URL.</param>
+    private static void ConfigureAddResponse<T>(MockHttpMessageHandler messageHandler, string url)
+        where T : ApiObject
     {
         messageHandler
-            .When(HttpMethod.Post, usersUrl)
+            .When(HttpMethod.Post, url)
             .Respond(async request =>
             {
                 HttpContent? httpContent = request.Content;
 
-                User? user = await request.Content?.ReadFromJsonAsync<User>()!;
+                T? itemToAdd = await request.Content?.ReadFromJsonAsync<T>()!;
 
-                if (user == null)
+                if (itemToAdd == null)
                     return new HttpResponseMessage(HttpStatusCode.BadRequest);
 
-                user.Id = new Uri($"{usersUrl}/{Guid.NewGuid()}").ToString();
+                var apiObject = itemToAdd as ApiObject;
 
-                user.Operations = new[]
+                apiObject.Id = new Uri($"{url}/{Guid.NewGuid()}").ToString();
+
+                apiObject.Operations = new[]
                 {
                     new Operation(Method.Delete),
                     new Operation(Method.Put),
@@ -66,7 +83,7 @@ public static class MockHttpMessageHandlerExtensions
 
                 HttpResponseMessage response = new(HttpStatusCode.Created);
 
-                response.Content = new StringContent(JsonSerializer.Serialize(user));
+                response.Content = new StringContent(JsonSerializer.Serialize(itemToAdd));
 
                 response.Content.Headers.ContentType = new("application/ld+json");
 
@@ -75,52 +92,29 @@ public static class MockHttpMessageHandlerExtensions
     }
 
     /// <summary>
-    /// Configures the delete user response.
+    /// Configures a DELETE response.
     /// </summary>
-    /// <param name="messageHandler"></param>
-    /// <param name="usersUrl"></param>
-    private static void ConfigureDeleteUserResponse(
-        MockHttpMessageHandler messageHandler, string usersUrl)
+    /// <param name="messageHandler">Message handler.</param>
+    /// <param name="url">URL.</param>
+    /// <param name="schemaTitle">Schema title. Used for the delete message.</param>
+    private static void ConfigureDeleteResponse(
+        MockHttpMessageHandler messageHandler, string url, string schemaTitle)
     {
         messageHandler
-            .When(HttpMethod.Delete, $"{usersUrl}/*")
+            .When(HttpMethod.Delete, $"{url}/*")
             .Respond(request =>
             {
                 Status status = new(
                     new Context(new Uri("http://www.w3.org/ns/hydra/context.jsonld")),
                     (int)HttpStatusCode.OK,
                     "OK",
-                    "User removed.");
+                    $"{schemaTitle} removed.");
 
                 HttpResponseMessage response = new(HttpStatusCode.OK);
 
                 response.Content = new StringContent(JsonSerializer.Serialize(status));
 
                 response.Content.Headers.ContentType = new("application/ld+json");
-
-                return response;
-            });
-    }
-
-    /// <summary>
-    /// Configures the response for getting environments.
-    /// </summary>
-    /// <param name="messageHandler">Message handler.</param>
-    /// <param name="environmentsUrl">Environments URL.</param>
-    private static void ConfigureGetEnvironmentsResponse(
-        MockHttpMessageHandler messageHandler, string environmentsUrl)
-    {
-        messageHandler
-            .When(HttpMethod.Get, environmentsUrl)
-            .Respond(_ =>
-            {
-                HttpResponseMessage response = new(HttpStatusCode.OK)
-                {
-                    Content = JsonContent.Create(
-                        new[] { "Development", "Test", "UAT", "Production" })
-                };
-
-                response.Content.Headers.ContentType = new("application/json");
 
                 return response;
             });
@@ -185,20 +179,21 @@ public static class MockHttpMessageHandlerExtensions
     }
 
     /// <summary>
-    /// Configures a get users response.
+    /// Configures a GET response.
     /// </summary>
-    /// <param name="messageHandler"><see cref="MockHttpMessageHandler"/>.</param>
-    /// <param name="usersUrl">Users URL.</param>
-    private static void ConfigureGetUsersResponse(
-        MockHttpMessageHandler messageHandler, string usersUrl)
+    /// <param name="messageHandler">Message handler.</param>
+    /// <param name="url">URL.</param>
+    /// <param name="content">Content.</param>
+    private static void ConfigureGetResponse(
+        MockHttpMessageHandler messageHandler, string url, object content)
     {
         messageHandler
-            .When(HttpMethod.Get, usersUrl)
+            .When(HttpMethod.Get, url)
             .Respond(_ =>
             {
                 HttpResponseMessage response = new(HttpStatusCode.OK);
 
-                response.Content = new StringContent(JsonSerializer.Serialize(UserApi.GetUsers()));
+                response.Content = new StringContent(JsonSerializer.Serialize(content));
 
                 response.Content.Headers.ContentType = new("application/ld+json");
 

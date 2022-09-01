@@ -30,6 +30,7 @@ builder.Services.AddScoped(_ =>
 });
 
 mockHttpMessageHandler.AddMockUserApiResponses(
+    $"{apiBaseUrl}/access-reviews",
     $"{apiBaseUrl}/api-docs/current/openapi.json",
     $"{apiBaseUrl}/environments",
     $"https://cdn.example.com/images",

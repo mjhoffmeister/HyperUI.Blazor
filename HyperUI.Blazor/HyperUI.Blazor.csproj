@@ -4,7 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.1.2</Version>
+    <Version>1.2.0</Version>
     <Authors>Matt Hoffmeister</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>Provides components for HyperUI Blazor clients.</Description>
@@ -17,7 +17,7 @@
   <ItemGroup>
     <PackageReference Include="FluentResults" Version="3.11.0" />
     <PackageReference Include="Hydra.NET" Version="1.0.0" />
-    <PackageReference Include="HyperUI.Core" Version="2.3.0" />
+    <PackageReference Include="HyperUI.Core" Version="2.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.8" />
     <PackageReference Include="Microsoft.Authentication.WebAssembly.Msal" Version="6.0.8" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="6.0.0" />
