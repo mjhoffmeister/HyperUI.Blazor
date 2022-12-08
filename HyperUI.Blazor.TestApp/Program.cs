@@ -36,11 +36,6 @@ mockHttpMessageHandler.AddMockUserApiResponses(
     $"https://cdn.example.com/images",
     $"{apiBaseUrl}/users");
 
-builder.Services
-    .AddSingleton<FakeSignOutSessionStateManager>()
-    .AddSingleton<SignOutSessionStateManager>(s => 
-        s.GetRequiredService<FakeSignOutSessionStateManager>());
-
 TestAuthorizationContext testAuthorizationContext = new();
 
 testAuthorizationContext.SetAuthorized("Zhang Xia");
