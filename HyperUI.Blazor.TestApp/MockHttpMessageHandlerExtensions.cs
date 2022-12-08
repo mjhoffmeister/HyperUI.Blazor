@@ -43,8 +43,6 @@ public static class MockHttpMessageHandlerExtensions
 
         ConfigureGetOpenApiDocumentationResponse(messageHandler, documentationUrl);
 
-        ConfigureGetResponse(messageHandler, accessReviewsUrl, UserApi.GetAccessReviews());
-
         ConfigureGetResponse(
             messageHandler, environmentsUrl, new[] { "Development", "Test", "UAT", "Production" });
 

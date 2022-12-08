@@ -5,7 +5,6 @@
 @namespace HyperUI.Blazor.Internal
 
 @inject NavigationManager Navigation
-@inject SignOutSessionStateManager SignOutManager
 
 <AuthorizeView>
     <Authorized>
@@ -33,9 +32,8 @@
 </AuthorizeView>
 
 @code{
-    private async Task BeginLogout()
+    private void BeginLogout()
     {
-        await SignOutManager.SetSignOutState();
         Navigation.NavigateTo("authentication/logout");
     }
 }
