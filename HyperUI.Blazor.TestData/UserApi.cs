@@ -64,6 +64,82 @@ public static class UserApi
                     }
                 },
             },
+            ["/tasks"] = new()
+            {
+                Summary = "Tasks",
+                Extensions = new Dictionary<string, IOpenApiExtension>()
+                {
+                    ["x-icon-hint"] = new OpenApiString("ViewKanban"),
+                    ["x-is-nav-menu-link"] = new OpenApiBoolean(true),
+                    ["x-render-hint"] = new OpenApiString("KanbanBoard"),
+                },
+                Operations = new Dictionary<OperationType, OpenApiOperation>
+                {
+                    [OperationType.Get] = new()
+                    {
+                        Responses = new()
+                        {
+                            ["200"] = new()
+                            {
+                                Content = new Dictionary<string, OpenApiMediaType>()
+                                {
+                                    ["application/ld+json"] = new()
+                                    {
+                                        Schema = new()
+                                        {
+                                            Type = "array",
+                                            Items = new()
+                                            {
+                                                Reference = new()
+                                                {
+                                                    Id = "Task",
+                                                    Type = ReferenceType.Schema
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                Description = "OK",
+                            }
+                        }
+                    }
+                },
+            },
+            ["/tasks/{id}/approve"] = new()
+            {
+                Summary = "Tasks",
+                Operations = new Dictionary<OperationType, OpenApiOperation>
+                {
+                    [OperationType.Post] = new()
+                    {
+                        Responses = new()
+                        {
+                            ["200"] = new()
+                            {
+                                Content = new Dictionary<string, OpenApiMediaType>()
+                                {
+                                    ["application/ld+json"] = new()
+                                    {
+                                        Schema = new()
+                                        {
+                                            Type = "array",
+                                            Items = new()
+                                            {
+                                                Reference = new()
+                                                {
+                                                    Id = "Task",
+                                                    Type = ReferenceType.Schema
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                Description = "OK",
+                            }
+                        }
+                    }
+                },
+            },
             ["/users"] = new()
             {
                 Summary = "Users",
