@@ -1,10 +1,13 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Microsoft.Extensions.Options
+
 @using MudBlazor
 
 @namespace HyperUI.Blazor.Internal
 
 @inject NavigationManager Navigation
+@inject IOptionsSnapshot<RemoteAuthenticationOptions<ApiAuthorizationProviderOptions>> Options
 
 <AuthorizeView>
     <Authorized>
@@ -34,6 +37,7 @@
 @code{
     private void BeginLogout()
     {
-        Navigation.NavigateTo("authentication/logout");
+        Navigation.NavigateToLogout(Options.Get(Microsoft.Extensions.Options.Options.DefaultName)
+            .AuthenticationPaths.LogOutPath);
     }
 }
