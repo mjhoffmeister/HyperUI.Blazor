@@ -43,6 +43,7 @@
 			OnAddCallback="@OnAdd"
 			OnAddStartedCallback="@OnAddStarted"
 			OnDeleteCallback="@OnDelete"
+			OnEditCallback="@OnEdit"
 			ReferencedSchemas="@_tableItemReferencedSchemas"
 			Schema="@_tableItemSchema" 
 			Title="@_title"
@@ -192,9 +193,53 @@
 		// TODO: handle failures
 	}
 
+	/// <summary>
+	/// Add started event.
+	/// </summary>
+	/// <param name="newEmptyItem">New empty item.</param>
 	private void OnAddStarted(Dictionary<string, object?> newEmptyItem)
 	{
 		_pageData?.Insert(0, newEmptyItem);
+	}
+
+	/// <summary>
+	/// Edit event.
+	/// </summary>
+	/// <param name="editItemEvent">Edit event object.</param>
+	/// <returns>The result of the async operation.</returns>
+	private async Task OnEdit(EditItemEvent editItemEvent)
+	{
+		Dictionary<string, object?> editedItem = editItemEvent.Item;
+
+		HttpClient httpClient = HttpClientFactory.CreateClient("WebApi");
+
+		// Try to get the edited item's id
+		if (!editedItem.TryGetValue("@id", out object? idObject) || idObject is not string)
+		{
+			editItemEvent.Failure();
+			Snackbar.Add(
+				"Could not edit because the item is missing a valid id URL.", Severity.Warning);
+		}
+
+		// Put the edited item
+		HttpResponseMessage? putResponse = await httpClient.PutAsync(
+			idObject!.ToString(), JsonContent.Create(editedItem));
+
+		// Try get the the Hydra status description from the response
+		string? message = await putResponse.TryGetStatusDescriptionAsync();
+
+		// Success
+		if (putResponse?.StatusCode == HttpStatusCode.OK)
+		{
+			editItemEvent.Success();
+			Snackbar.Add(message ?? "Item updated.");
+		}
+		// Failure or unexpected status code
+		else
+		{
+			editItemEvent.Failure();
+			Snackbar.Add(message ?? "Edit failed.", Severity.Warning);
+		}
 	}
 
 	/// <summary>
@@ -229,7 +274,7 @@
 			else
 			{
 				message = await deleteResponse
-					.TryGetStatusDescriptionAsync() ?? $"Failed to remove item.";
+					.TryGetStatusDescriptionAsync() ?? "Failed to remove item.";
 			}
 
 			// Show the message in a snackbar

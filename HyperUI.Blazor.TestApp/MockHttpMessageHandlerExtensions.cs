@@ -47,6 +47,8 @@ public static class MockHttpMessageHandlerExtensions
             messageHandler, environmentsUrl, new[] { "Development", "Test", "UAT", "Production" });
 
         ConfigureGetResponse(messageHandler, usersUrl, UserApi.GetUsers());
+
+        ConfigurePutResponse(messageHandler, usersUrl, "User");
     }
 
     /// <summary>
@@ -197,5 +199,34 @@ public static class MockHttpMessageHandlerExtensions
 
                 return response;
             });
+    }
+
+    /// <summary>
+    /// Configures a PUT response.
+    /// </summary>
+    /// <param name="messageHandler">Message handler.</param>
+    /// <param name="url">URL.</param>
+    /// <param name="content">Content.</param>
+    private static void ConfigurePutResponse(
+        MockHttpMessageHandler messageHandler, string url, string schemaTitle)
+    {
+        messageHandler
+            .When(HttpMethod.Put, $"{url}/*")
+            .Respond(_ =>
+            {
+				Status status = new(
+					new Context(new Uri("http://www.w3.org/ns/hydra/context.jsonld")),
+					(int)HttpStatusCode.OK,
+					"OK",
+					$"{schemaTitle} updated.");
+
+				HttpResponseMessage response = new(HttpStatusCode.OK);
+
+                response.Content = new StringContent(JsonSerializer.Serialize(status));
+
+				response.Content.Headers.ContentType = new("application/ld+json");
+
+				return response;
+			});
     }
 }

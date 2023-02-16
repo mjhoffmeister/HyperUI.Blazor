@@ -4,7 +4,7 @@
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>2.0.0</Version>
+    <Version>2.1.0</Version>
     <Authors>Matt Hoffmeister</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>Provides components for HyperUI Blazor clients.</Description>
@@ -15,16 +15,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentResults" Version="3.15.1" />
+    <PackageReference Include="FluentResults" Version="3.15.2" />
     <PackageReference Include="Hydra.NET" Version="1.0.0" />
     <PackageReference Include="HyperUI.Core" Version="2.4.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Authentication.WebAssembly.Msal" Version="7.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.3" />
+    <PackageReference Include="Microsoft.Authentication.WebAssembly.Msal" Version="7.0.3" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
-    <PackageReference Include="Microsoft.OpenApi" Version="1.4.5" />
-    <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.4.5" />
-    <PackageReference Include="MudBlazor" Version="6.1.4" />
+    <PackageReference Include="Microsoft.OpenApi" Version="1.6.1" />
+    <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.1" />
+    <PackageReference Include="MudBlazor" Version="6.1.8" />
   </ItemGroup>
 
   <ItemGroup>

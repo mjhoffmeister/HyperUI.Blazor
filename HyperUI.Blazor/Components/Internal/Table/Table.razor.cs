@@ -58,6 +58,12 @@ public partial class Table : ComponentBase
     public EventCallback<Dictionary<string, object?>> OnAddStartedCallback { get; set; }
 
     /// <summary>
+    /// Event callback for editing an item.
+    /// </summary>
+    [Parameter]
+    public EventCallback<EditItemEvent> OnEditCallback { get; set; }
+
+    /// <summary>
     /// Event callback for deleting an item.
     /// </summary>
     [Parameter]
@@ -160,11 +166,6 @@ public partial class Table : ComponentBase
             // Signal state change
             StateHasChanged();
         }
-        // TODO: Editing an existing item is cancelled
-        else if (_editState == TableEditState.EditingExistingItem)
-        {
-
-        }
 
         // Set edit state to not editing
         _editState = TableEditState.NotEditing;
@@ -173,7 +174,7 @@ public partial class Table : ComponentBase
     /// <summary>
     /// Handles the OnClick event of a row's commit edit button
     /// </summary>
-    /// <returns></returns>
+    /// <returns>The result of the async task.</returns>
     private async Task OnCommitEditButtonClicked()
     {
         if (_table != null && Items != null)
@@ -186,10 +187,20 @@ public partial class Table : ComponentBase
             {
                 await OnAddCallback.InvokeAsync(Items.First());
             }
-            // TODO: Existing item edits are committed
+            // Existing item edits are committed
             else if (_editState == TableEditState.EditingExistingItem)
             {
+                Dictionary<string, object?> selectedItem = _table.SelectedItem;
 
+                EditItemEvent editItemEvent = new(selectedItem);
+
+                await OnEditCallback.InvokeAsync(editItemEvent);
+
+                if (editItemEvent.IsFailed)
+                {
+                    RevertItemChanges(selectedItem);
+                    _table.SetEditingItem(selectedItem);
+				}
             }
         }
 
@@ -214,6 +225,16 @@ public partial class Table : ComponentBase
 
             _isLoading = false;
         }
+    }
+
+    /// <summary>
+    /// Handles when an editable row is clicked.
+    /// </summary>
+    private void OnPreviewEditClick()
+    {
+		// The edit state is set in OnAddButtonClicked for new items
+		if (_editState != TableEditState.EditingNewItem)
+            _editState = TableEditState.EditingExistingItem;
     }
     
     /// <summary>
